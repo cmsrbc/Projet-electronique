@@ -1,0 +1,36 @@
+#include <Wire.h>
+#include <Arduino.h>
+#include <RTClib.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_LEDBackpack.h>
+#include <Adafruit_SSD1306.h>
+#include <Encoder.h>
+//encodeur(potentiometre)
+#define ENCODER_DO_NOT_USE_INTERRUPTS
+#define OLED_RESET 4
+//capteur ultrason
+#define ECHO_PIN     D7 
+#define TRIGGER_PIN  D8 
+
+Adafruit_SSD1306 display(OLED_RESET);
+
+RTC_DS1307 rtc;
+Adafruit_8x8matrix matrix = Adafruit_8x8matrix();
+Encoder myEnc(5, 6); // Encoder connecté aux pins 5 et 6
+
+int lastHour = 0;
+int lastMinute = 0;
+bool isAlarmSet = false;
+//pin capteur ultrason
+int trigPin = 8;
+int echoPin = 7;
+int duree;
+
+//pin buzzer et led
+int piezoPin = 9;
+int pin_LED = 13;
+int state = LOW;
+
+// Pins pour les boutons poussoirs
+const int buttonPinHour = 2; 
+const int buttonPinMinute = 3;
