@@ -1,0 +1,23 @@
+void reglage_heure(){
+      // Régler l'heure à l'aide de l'encodeur
+    long newPosition = myEnc.read();
+    if (newPosition > lastHour) {
+      lastHour++;
+      rtc.adjust(DateTime(now.year(), now.month(), now.day(), lastHour, now.minute(), now.second()));
+    }
+    if (newPosition < lastHour) {
+      lastHour--;
+      rtc.adjust(DateTime(now.year(), now.month(), now.day(), lastHour, now.minute(), now.second()));
+    }
+    // Régler l'heure à l'aide des boutons poussoirs
+    if (digitalRead(buttonPinHour) == HIGH) {
+      lastHour++;
+      rtc.adjust(DateTime(now.year(), now.month(), now.day(), lastHour, now.minute(), now.second()));
+    }
+    if (digitalRead(buttonPinMinute) == HIGH) {
+      lastMinute++;
+      rtc.adjust(DateTime(now.year(), now.month(), now.day(), now.hour(), lastMinute, now.second()));
+    }
+    delay(1000); // Attendez 1 seconde
+
+}
