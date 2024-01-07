@@ -1,0 +1,194 @@
+#include <Wire.h>
+#include <Arduino.h>
+#include <RTClib.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_LEDBackpack.h>
+#include <Adafruit_SSD1306.h>
+#include <Encoder.h>
+//encodeur(potentiometre)
+#define ENCODER_DO_NOT_USE_INTERRUPTS
+#define OLED_RESET 4
+//capteur ultrason
+#define ECHO_PIN     D7 
+#define TRIGGER_PIN  D8 
+
+Adafruit_SSD1306 display(OLED_RESET);
+
+RTC_DS1307 rtc;
+Adafruit_8x8matrix matrix = Adafruit_8x8matrix();
+Encoder myEnc(5, 6); // Encoder connecté aux pins 5 et 6
+
+int lastHour = 0;
+int lastMinute = 0;
+bool isAlarmSet = false;
+//pin capteur ultrason
+int trigPin = 8;
+int echoPin = 7;
+int duree;
+
+//pin buzzer et led
+int piezoPin = 9;
+int pin_LED = 13;
+int state = LOW;
+
+// Pins pour les boutons poussoirs
+const int buttonPinHour = 2; 
+const int buttonPinMinute = 3;
+
+
+void setup() 
+{ 
+  Serial.begin(9600);
+  Wire.begin();
+  rtc.begin();
+  matrix.begin(0x70); // Adresse I2C de la matrice de LED
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // Initialise l'écran OLED
+  //initialise le capteur ultrason
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, OUTPUT);
+  // Initialise les boutons poussoirs
+  pinMode(buttonPinHour, INPUT);
+  pinMode(buttonPinMinute, INPUT);
+
+  // Réglez l'heure du RTC (à ajuster selon vos besoins)
+  rtc.adjust(DateTime(F(DATE), F(TIME)));
+  //initialisation heure reveil
+  heurereveil.begin();
+  //initialiser les pin du buzzer et de la led
+  pinMode(piezoPin, OUTPUT);
+  pinMode (pin_LED,OUTPUT);
+
+}
+void reglage_heure(){
+      // Régler l'heure à l'aide de l'encodeur
+    long newPosition = myEnc.read();
+    if (newPosition > lastHour) {
+      lastHour++;
+      rtc.adjust(DateTime(now.year(), now.month(), now.day(), lastHour, now.minute(), now.second()));
+    }
+    if (newPosition < lastHour) {
+      lastHour--;
+      rtc.adjust(DateTime(now.year(), now.month(), now.day(), lastHour, now.minute(), now.second()));
+    }
+    // Régler l'heure à l'aide des boutons poussoirs
+    if (digitalRead(buttonPinHour) == HIGH) {
+      lastHour++;
+      rtc.adjust(DateTime(now.year(), now.month(), now.day(), lastHour, now.minute(), now.second()));
+    }
+    if (digitalRead(buttonPinMinute) == HIGH) {
+      lastMinute++;
+      rtc.adjust(DateTime(now.year(), now.month(), now.day(), now.hour(), lastMinute, now.second()));
+    }
+    delay(1000); // Attendez 1 seconde
+
+}
+void melodie(){
+  int decompte_reveil;
+  do {
+    delay(1000);
+    decompte_reveil++;
+  }
+   //durée de la melodie < 10 secondes
+      //etat de la led inversé
+  for(int a=0;a<10;a++){
+    state= !state;
+    digitalWrite(pin,state);
+    delay(1000);
+  }    //inversion de l'état de la LED chaque seconde
+  for (int d=0;d<2;d++)
+    { 
+    for(int b=0;b<2;b++){
+      tone(piezoPin, 261.626, 500);
+      tone(piezoPin, 293.665, 500);
+      tone(piezoPin, 329.628, 500);
+      tone(piezoPin, 261.626, 500);
+      delay(100);
+    }//partie1 de la melodie
+    for(int c=0;c<2;c++){
+      tone(piezoPin, 329.628, 500);
+      tone(piezoPin, 349.228, 500);
+      tone(piezoPin, 391.995, 500);
+      delay(250);
+      //partie 2 de la melodie
+    }}
+    //fin de la mélodie
+  notone(piezoPin);
+  delay();
+
+}
+
+void loop() {
+  DateTime now = rtc.now();
+  int seconds = now.seconds();
+
+  // Clignotement d'une LED pour apprécier le cadencement des secondes
+  if (seconds % 2 == 0) {
+    matrix.clear();
+  } else {
+    matrix.fillScreen(1);
+  }
+  // Afficher l'heure sur la matrice de LED
+  matrix.setCursor(0, 0);
+  matrix.print(now.hour());
+  matrix.writeDisplay();
+  // Afficher l'heure sur l'écran OLED
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(0,0);
+  display.println(now.hour(), DEC);
+  display.println(":");
+  display.println(now.minute(), DEC);
+  display.display();
+    //Menu 
+  display.println("Menu interactif:");
+  display.println("1-Reglage de l'heure ");
+  display.println("2-Reglage du reveil");
+  //parametrage matrice a faire!!!!
+  if(digitalRead(pin_boutton1)=1 &&digita){
+    //si le bouton poussoir a la pin 2 appuyé 
+    display.println("1-Reglage de l'heure ");
+    reglage_heure();
+
+    else {
+      if (digitalRead(pin_boutton2)=1){
+        //si le boutton poussoir a la pin 3 est appuyé
+        display.println("2-Reglage du reveil");
+        reglage_heure();
+
+      }
+    }
+  }
+  display.println("Reveil activé ");
+
+  DateTime now = rtc.now();
+  //Serial.print("Heure actuelle:");
+  Serial.print(now.hour());
+  Serial.print(":");
+  Serial.print(now.minute());
+  Serial.print(":");
+  Serial.print(now.second());
+  delay(20);
+  if (DateTime  == heurereveil){
+    //le capteur est sensible au pulsations >=10 secondes
+    //nettoyage de haut impulsion
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(5);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+    //lire le signal a partir du capteur 
+    pinMode(echoPin, INPUT);
+    //temps de trajet de l'onde 
+  duree = pulseIn(echoPin, HIGH);
+  //conversion en secondes de la duree
+  duree = duree/1000;
+    //si les deux bouttons poussoirs ne sont pas sont appuyés
+      while(digitalRead(pin_boutton1)!=1 && digitalRead(pinboutton2)!=1)
+    {  
+
+      melodie();
+    }
+    display.println("temps pour eteindre :",decompte_reveil);
+  }
+}
