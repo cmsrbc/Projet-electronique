@@ -1,0 +1,9 @@
+// Afficher l'heure sur l'écran OLED
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(0,0);
+  display.println(now.hour(), DEC);
+  display.println(":");
+  display.println(now.minute(), DEC);
+  display.display();
