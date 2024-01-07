@@ -1,0 +1,23 @@
+void setup() 
+{ 
+  Serial.begin(9600);
+  Wire.begin();
+  rtc.begin();
+  matrix.begin(0x70); // Adresse I2C de la matrice de LED
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // Initialise l'écran OLED
+  //initialise le capteur ultrason
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, OUTPUT);
+  // Initialise les boutons poussoirs
+  pinMode(buttonPinHour, INPUT);
+  pinMode(buttonPinMinute, INPUT);
+
+  // Réglez l'heure du RTC (à ajuster selon vos besoins)
+  rtc.adjust(DateTime(F(DATE), F(TIME)));
+  //initialisation heure reveil
+  heurereveil.begin();
+  //initialiser les pin du buzzer et de la led
+  pinMode(piezoPin, OUTPUT);
+  pinMode (pin_LED,OUTPUT);
+
+}
