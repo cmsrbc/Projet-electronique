@@ -1,0 +1,51 @@
+//Menu 
+  display.println("Menu interactif:");
+  display.println("1-Reglage de l'heure ");
+  display.println("2-Reglage du reveil");
+  //parametrage matrice a faire!!!!
+  if(digitalRead(pin_boutton1)=1 &&digita){
+    //si le bouton poussoir a la pin 2 appuyé 
+    display.println("1-Reglage de l'heure ");
+    reglage_heure();
+
+    else {
+      if (digitalRead(pin_boutton2)=1){
+        //si le boutton poussoir a la pin 3 est appuyé
+        display.println("2-Reglage du reveil");
+        reglage_heure();
+
+      }
+    }
+  }
+  display.println("Reveil activé ");
+
+  DateTime now = rtc.now();
+  //Serial.print("Heure actuelle:");
+  Serial.print(now.hour());
+  Serial.print(":");
+  Serial.print(now.minute());
+  Serial.print(":");
+  Serial.print(now.second());
+  delay(20);
+  if (DateTime  == heurereveil){
+    //le capteur est sensible au pulsations >=10 secondes
+    //nettoyage de haut impulsion
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(5);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+    //lire le signal a partir du capteur 
+    pinMode(echoPin, INPUT);
+    //temps de trajet de l'onde 
+  duree = pulseIn(echoPin, HIGH);
+  //conversion en secondes de la duree
+  duree = duree/1000;
+    //si les deux bouttons poussoirs ne sont pas sont appuyés
+      while(digitalRead(pin_boutton1)!=1 && digitalRead(pinboutton2)!=1)
+    {  
+
+      melodie();
+    }
+    display.println("temps pour eteindre :",decompte_reveil);
+  }
