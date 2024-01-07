@@ -1,0 +1,6 @@
+  // Clignotement d'une LED pour apprécier le cadencement des secondes
+  if (seconds % 2 == 0) {
+    matrix.clear();
+  } else {
+    matrix.fillScreen(1);
+  }
