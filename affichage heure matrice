@@ -1,0 +1,4 @@
+ // Afficher l'heure sur la matrice de LED
+  matrix.setCursor(0, 0);
+  matrix.print(now.hour());
+  matrix.writeDisplay();
