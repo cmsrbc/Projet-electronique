@@ -12,6 +12,7 @@ RTC_DS1307 rtc;
 LedControl lc = LedControl(11, 13, 7, 4);
 const byte NB_MAX7219 = 4;
 byte afficheur[8 * NB_MAX7219];
+Encoder myEnc(5, 6); 
 
 //encodeur(potentiometre)
 #define ENCODER_DO_NOT_USE_INTERRUPTS
@@ -21,11 +22,6 @@ byte afficheur[8 * NB_MAX7219];
 #define ECHO_PIN     D7
 #define TRIGGER_PIN  D8
 
-Adafruit_SSD1306 display(OLED_RESET);
-
-RTC_DS1307 rtc;
-Adafruit_8x8matrix matrix = Adafruit_8x8matrix();
-Encoder myEnc(5, 6); 
 
 // Encoder connecté aux pins 5 et 6
 int lastHour = 0;
@@ -80,53 +76,7 @@ void afficherHeureSurMatrice(int heures, int minutes) {
   lc.setLed(1, 5, 0, true);
 }
 
-void loop() {
-  DateTime now = rtc.now();
-  int heures = now.hour();
-  int minutes = now.minute();
-  afficherHeureSurMatrice(heures, minutes);
-  delay(500);
-}
 
-
-void setup()
-{
-  Serial.begin(57600);
-Wire.begin();
-rtc.begin();
-matrix.begin(0x70); // Adresse I2C de la matrice de LED
-display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // Initialise l'écran OLED
-//initialise le capteur ultrason
-pinMode(trigPin, OUTPUT);
-pinMode(echoPin, OUTPUT);
-// Initialise les boutons poussoirs
-pinMode(buttonPinHour, INPUT);
-pinMode(buttonPinMinute, INPUT);
-
-// Réglez l'heure du RTC (à ajuster selon vos besoins)
-rtc.adjust(DateTime(F(DATE), F(TIME)));
-//initialisation heure reveil
-heurereveil.begin();
-//initialiser les pin du buzzer et de la led
-pinMode(piezoPin, OUTPUT);
-pinMode (pin_LED,OUTPUT);
-  if (!rtc.begin()) {
-    Serial.println("Couldn't find RTC");
-    Serial.flush();
-    abort();
-  }
-
-  if (!rtc.isrunning()) {
-    Serial.println("RTC is NOT running !");
-  }
-
-  for (int index = 0; index < NB_MAX7219; index++) {
-    lc.shutdown(index, false);
-    lc.setIntensity(index, 6);
-    lc.clearDisplay(index);
-  }
-
-}
 void reglage_heure(){
 // Régler l'heure à l'aide de l'encodeur
 long newPosition = myEnc.read();
@@ -187,7 +137,8 @@ notone(piezoPin);
 void loop() {
 
 
-
+//afficher l'heure 
+afficherHeureSurMatrice(heures, minutes);
 //Menu
 display.println("Menu interactif:");
 display.println("1-Reglage de l'heure ");
@@ -236,4 +187,44 @@ display.println("temps pour eteindre :",decompte_reveil);
 delay(500);
 
 }
+}
+
+
+void setup()
+{
+  Serial.begin(57600);
+Wire.begin();
+rtc.begin();
+matrix.begin(0x70); // Adresse I2C de la matrice de LED
+display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // Initialise l'écran OLED
+//initialise le capteur ultrason
+pinMode(trigPin, OUTPUT);
+pinMode(echoPin, OUTPUT);
+// Initialise les boutons poussoirs
+pinMode(buttonPinHour, INPUT);
+pinMode(buttonPinMinute, INPUT);
+
+// Réglez l'heure du RTC (à ajuster selon vos besoins)
+rtc.adjust(DateTime(F(DATE), F(TIME)));
+//initialisation heure reveil
+heurereveil.begin();
+//initialiser les pin du buzzer et de la led
+pinMode(piezoPin, OUTPUT);
+pinMode (pin_LED,OUTPUT);
+  if (!rtc.begin()) {
+    Serial.println("Couldn't find RTC");
+    Serial.flush();
+    abort();
+  }
+
+  if (!rtc.isrunning()) {
+    Serial.println("RTC is NOT running !");
+  }
+
+  for (int index = 0; index < NB_MAX7219; index++) {
+    lc.shutdown(index, false);
+    lc.setIntensity(index, 6);
+    lc.clearDisplay(index);
+  }
+
 }
