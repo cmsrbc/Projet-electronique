@@ -1,0 +1,94 @@
+#include <Wire.h>
+#include <Arduino.h>
+#include <RTClib.h>
+#include <SPI.h>
+#include <LedControl.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <toneAC.h>
+#include <NewPing.h>// Librairie pour le capteur à ultrason HC-SR04
+#include <EEPROM.h>
+
+#define SCREEN_WIDTH 128 // Largeur de l'écran OLED en pixels
+#define SCREEN_HEIGHT 64 // Hauteur de l'écran OLED en pixels
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);// Initialisation de l'écran OLED avec l'adresse I2C
+RTC_DS1307 rtc;
+LedControl lc = LedControl(11, 10, 12);
+const byte NB_MAX7219 = 4;
+byte Matrice[8 * NB_MAX7219];
+NewPing sonar(10, 13);
+
+volatile bool alarmEnabled = false;
+
+void displayMenu()
+ {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.print("Alarme: ");
+  if (alarmEnabled=false)
+    display.println("Alarme Désactivée");
+  else
+    display.println("Alarme Activée");
+  display.display();
+}
+void afficherHeure(int chiffre, int Led) {
+  byte chiffres[10][8] = {
+      {B00011100, B00100010, B00100010, B00100010, B00100010, B00100010, B00100010, B00011100}, // 0
+      {B00001000, B00011000, B00001000, B00001000, B00001000, B00001000, B00001000, B00011100}, // 1
+      {B00011100, B00100010, B00000010, B00000010, B00000100, B00001000, B00010000, B00111110}, // 2
+      {B00011100, B00100010, B00000010, B00001100, B00000010, B00000010, B00100010, B00011100}, // 3
+      {B00000100, B00001100, B00010100, B00100100, B00100100, B00111110, B00000100, B00000100}, // 4
+      {B00111110, B00100000, B00100000, B00111100, B00000010, B00000010, B00100010, B00011100}, // 5
+      {B00011100, B00100010, B00100000, B00111100, B00100010, B00100010, B00100010, B00011100}, // 6
+      {B00111110, B00000010, B00000010, B00000100, B00001000, B00010000, B00010000, B00010000}, // 7
+      {B00011100, B00100010, B00100010, B00011100, B00100010, B00100010, B00100010, B00011100}, // 8
+      {B00011100, B00100010, B00100010, B00100010, B00011110, B00000010, B00100010, B00011100}  // 9
+  };
+   for (int i = 0; i < 8; i++) {
+    lc.setRow(Led, i, chiffres[chiffre][i]);
+  }
+}
+
+void HeureMatrice(int heures, int minutes) {
+  int dizaineHeure = heures / 10;
+  int uniteHeure = heures % 10;
+  int dizaineMinute = minutes / 10;
+  int uniteMinute = minutes % 10;
+
+  afficherHeure(dizaineHeure, 3);
+  afficherHeure(uniteHeure, 2);
+  afficherHeure(dizaineMinute, 1);
+  afficherHeure(uniteMinute, 0);
+  lc.setLed(1, 2, 0, true); 
+  lc.setLed(1, 5, 0, true);
+}
+void setup()
+{
+    rtc.adjust(DateTime(F(DATE), F(TIME)));
+    Wire.begin();
+    rtc.begin();
+    for (int index = 0; index < NB_MAX7219; index++) {
+      lc.shutdown(index, false);
+      lc.setIntensity(index, 6);
+      lc.clearDisplay(index);
+    }
+    if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) 
+  {
+    Serial.println(F("Erreur : l'écran OLED n'a pas été détecté !"));
+    while(true);
+  }
+}
+
+void loop() 
+{
+  DateTime now = rtc.now();
+  int heures = now.hour();
+  int minutes = now.minute();
+  Serial.println(now.minute());
+  Serial.println(now.hour());
+  HeureMatrice(heures, minutes);
+  delay(20);
+}
