@@ -1,0 +1,240 @@
+#include <Wire.h>
+#include <RTClib.h>
+#include <LedControl.h> // Inclure la bibliothèque LedControl
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <toneAC.h>
+#include <NewPing.h>// Librairie pour le capteur à ultrason HC-SR04
+#include <EEPROM.h>
+
+
+unsigned long travelTime; 
+
+#define SCREEN_WIDTH 128 // Largeur de l'écran OLED en pixels
+#define SCREEN_HEIGHT 64 // Hauteur de l'écran OLED en pixels
+
+// Initialisation de l'écran OLED avec l'adresse I2C
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+RTC_DS1307 rtc;
+
+const int numberOfLeds = 32; // Nombre de LEDs dans la matrice
+const int numberOfColumns = 8; // Nombre de colonnes dans la matrice
+const int buttonPin = 2; // Broche pour le bouton
+const int formatButtonPin = 5;
+const int wakeUpInterruptPin = 6; // Broche pour l'interruption du réveil
+const int buzzerPin = 7; // Broche pour le buzzer
+const int trigPin = 8;   // Broche de déclenchement du capteur ultrason
+const int echoPin = 9;   // Broche de réception du capteur ultrason
+const int encoderPin1 = 7; // Broches pour l'encodeur
+const int encoderPin2 = 6;
+
+bool format24h = true; // Format 24h par défaut
+volatile int lastEncoded = 0;
+volatile long encoderValue = 0;
+volatile bool alarmEnabled = false; // État actuel de l'alarme
+volatile bool playMelody = false;
+volatile bool stopTimer = false; // Variable pour arrêter le décompte du temps
+
+NewPing sonar(trigPin, echoPin);
+
+// Pins pour la matrice de LEDs (DIN, CLK, LOAD/CS)
+LedControl lc = LedControl(13, 12, 10, 1);
+void wakeUpInterrupt()
+ {
+  alarmEnabled = !alarmEnabled; // Inverser l'état de l'alarme lors de l'interruption
+} // Adapter les pins selon ton branchement
+void startMelody() 
+{
+  playMelody = true;
+}
+void stopMelody() 
+{
+  playMelody = false;
+  toneAC(buzzerPin, 0); // Arrêter le son
+}
+void stopTimerCount() 
+{
+  stopTimer = true;
+}
+void displayMenu()
+ {
+  display.clearDisplay();
+
+  // Afficher le statut de l'alarme
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.print("Alarme: ");
+  display.println(alarmEnabled ? "Activée" : "Désactivée");
+
+  // Afficher d'autres informations du menu ici...
+
+  display.display();
+}
+void displayTimes() 
+{
+  display.clearDisplay();
+
+  // Afficher les temps depuis la mémoire EEPROM
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.println("Temps mis pour eteindre le reveil:");
+
+  int address = 0;
+  unsigned long time;
+
+  // Afficher chaque temps enregistré
+  for (int i = 0; i < EEPROM.length() / sizeof(time); i++) {
+    EEPROM.get(address, time);
+    display.print("Temps ");
+    display.print(i + 1);
+    display.print(": ");
+    display.print(time);
+    display.println(" ms");
+    address += sizeof(time);
+  }
+
+  display.display();
+}
+void eraseData() {
+  // Effacer les données de la mémoire EEPROM
+  EEPROM.write(0, 0);
+  display.clearDisplay();
+  display.display();
+}
+
+
+void setup() {
+  Serial.begin(9600);
+  // Initialisation de l'encodeur
+  
+
+  // Initialisation de la matrice de LEDs
+  lc.shutdown(0, false);       // Wake up displays
+  lc.setIntensity(0, 8);      // Set intensity levels (0 is min, 15 is max)
+  lc.clearDisplay(0);         // Clear display register
+
+  // Initialisation de l'écran OLED
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) 
+  {
+    Serial.println(F("Erreur : l'écran OLED n'a pas été détecté !"));
+    while(true);
+  }
+
+  display.display(); // Afficher le logo d'initialisation sur l'écran
+
+  Wire.begin();
+
+  // Code du module RTC
+  if (!rtc.begin()) {
+    Serial.println("Module RTC non détecté !");
+    while (1);
+  }
+
+  if (!rtc.isrunning()) {
+    Serial.println("L'horloge RTC ne fonctionne pas ! On va la démarrer.");
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+  // Initialisation des broches pour le bouton et l'encodeur
+  pinMode(buttonPin, INPUT_PULLUP);
+  pinMode(encoderPin1, INPUT);
+  pinMode(encoderPin2, INPUT);
+  pinMode(formatButtonPin, INPUT_PULLUP);
+  pinMode(wakeUpInterruptPin, INPUT_PULLUP);
+  pinMode(buzzerPin, OUTPUT);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  attachInterrupt(digitalPinToInterrupt(encoderPin1), updateEncoder, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(encoderPin2), updateEncoder, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(wakeUpInterruptPin), wakeUpInterrupt, CHANGE);
+
+   // Configuration de la fonction Tone pour le buzzer
+  toneAC(buzzerPin, 0); // Démarrage du buzzer
+  noToneAC(); // Arrêt du son
+}
+
+
+void loop() 
+{
+  DateTime now = rtc.now();
+  displayTime(now.hour(), now.minute(), now.second());
+  // Code pour permettre de changer le format de l'heure
+  if (digitalRead(formatButtonPin) == LOW) {
+    // Si le bouton de format est enfoncé, inverser le format entre 24h et 12h
+    format24h = !format24h;
+    delay(200); // Pour éviter les rebonds du bouton
+  }
+  if (alarmEnabled) {
+    // Réveil activé, implémenter ici les actions correspondantes
+  } else {
+    // Réveil désactivé, implémenter ici les actions correspondantes
+  }
+  // Code pour jouer la mélodie pendant 10 secondes
+  if (alarmEnabled && playMelody) {
+    startTimerCount(); 
+    //startMelody(); // Fonction pour démarrer la mélodie
+    delay(10000); // Attendre 10 secondes pour jouer la mélodie
+    stopTimerCount();  // Arrêter le décompte du temps
+    stopMelody(); // Fonction pour arrêter la mélodie
+
+    // Enregistrer le temps dans la mémoire EEPROM
+    int address = 0;
+    EEPROM.put(address, travelTime);
+    address += sizeof(travelTime);
+    alarmEnabled = false; // Désactiver l'alarme après la mélodie
+  }
+  displayMenu();
+   // Code pour afficher les temps mis pour éteindre le réveil
+  if (digitalRead(buttonPin) == LOW) {
+    displayTimes();
+    delay(5000); // Attendre 5 secondes avant de revenir au menu principal
+  }
+
+  // Code pour effacer les données à l'aide du menu
+  if (digitalRead(formatButtonPin) == LOW) {
+    eraseData();
+    delay(5000); // Attendre 5 secondes avant de revenir au menu principal
+  }
+}
+
+
+void displayTime(int hours, int minutes, int seconds) // Fonction pour afficher l'heure sur la matrice de LEDs
+{
+  // Affichage de l'heure sur la matrice de LEDs en utilisant la bibliothèque LedControl
+  lc.clearDisplay(0); // Effacer l'affichage précédent
+  
+  // Exemple basique d'affichage de l'heure, à adapter selon tes besoins
+  lc.setDigit(0, 7, hours / 10, false); // Affiche les dizaines d'heures
+  lc.setDigit(0, 6, hours % 10, false); // Affiche les unités d'heures
+  lc.setDigit(0, 4, minutes / 10, false); // Affiche les dizaines de minutes
+  lc.setDigit(0, 3, minutes % 10, false); // Affiche les unités de minutes
+  lc.setLed(0, 1, seconds % 2, true); // Clignotement de la LED pour marquer les secondes
+  
+  delay(1000); // Délai d'une seconde
+}
+
+void updateEncoder() // Fonction d'interruption pour l'encodeur
+{
+  int MSB = digitalRead(encoderPin1); // Most Significant Bit
+  int LSB = digitalRead(encoderPin2); // Least Significant Bit
+  int encoded = (MSB << 1) | LSB;
+  int sum = (lastEncoded << 2) | encoded;
+  if (sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) encoderValue++;
+  if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) encoderValue--;
+  lastEncoded = encoded;
+}
+void startTimerCount() 
+{
+  stopTimer = false; // Réinitialiser la variable pour permettre le décompte
+  attachInterrupt(digitalPinToInterrupt(echoPin), stopTimerCount, CHANGE);
+  // ... (Autres configurations du capteur ultrason)
+}
+void stopTimerCount()
+ {
+  stopTimer = true; // Arrêter le décompte du temps
+  detachInterrupt(digitalPinToInterrupt(echoPin));
+  // ... (Autres configurations du capteur ultrason)
+}
